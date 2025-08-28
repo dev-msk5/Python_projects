@@ -74,7 +74,67 @@ def pdf_cut():
     writer.close()
 
 def pdf_reorder():
-    pass
+    reader = None 
+    reorder_window = Toplevel(window)
+    reorder_window.title("Reorder PDF Pages")
+    reorder_window.geometry("400x500")
+
+    reorder_listbox = Listbox(reorder_window, selectmode=SINGLE, width=30, height=20)
+    reorder_listbox.pack(pady=10)
+
+    def load_pdf_for_reorder():
+        nonlocal reader
+        file = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
+        if not file:
+            return
+        reader = pdf.PdfReader(file)
+        reorder_listbox.delete(0, END)
+        for i in range(len(reader.pages)):
+            reorder_listbox.insert(END, f"Page {i+1}")
+
+    def move_up():                                                  # move page up
+        sel = reorder_listbox.curselection()
+        if not sel:
+            return
+        i = sel[0]
+        if i > 0:
+            text = reorder_listbox.get(i)
+            reorder_listbox.delete(i)
+            reorder_listbox.insert(i-1, text)
+            reorder_listbox.selection_set(i-1)
+
+    def move_down():                                            # move page down
+        sel = reorder_listbox.curselection()
+        if not sel:
+            return
+        i = sel[0]
+        if i < reorder_listbox.size()-1:
+            text = reorder_listbox.get(i)
+            reorder_listbox.delete(i)
+            reorder_listbox.insert(i+1, text)
+            reorder_listbox.selection_set(i+1)
+    def save_reordered():                                  # save file as given
+        if not reader:
+            return
+        writer = pdf.PdfWriter()
+        order = reorder_listbox.get(0, END)
+        for page_text in order:
+            page_num = int(page_text.split()[1]) - 1
+            writer.add_page(reader.pages[page_num])
+        out_name = name if name else "reordered"
+        writer.write(f"{out_name}.pdf")
+        print(f"Saved as {out_name}.pdf")
+
+
+    btn_load = Button(reorder_window, text="Load PDF", command=load_pdf_for_reorder)
+    btn_load.pack()
+    btn_up = Button(reorder_window, text="Move Up", command=move_up)
+    btn_up.pack()
+    btn_down = Button(reorder_window, text="Move Down", command=move_down)
+    btn_down.pack()
+    btn_save = Button(reorder_window, text="Save Reordered", command=save_reordered)
+    btn_save.pack(pady=10)
+
 
 def pdf_split(output1="part1.pdf", output2="part2.pdf"):
     
@@ -82,7 +142,7 @@ def pdf_split(output1="part1.pdf", output2="part2.pdf"):
         title="Select PDF to split",
         filetypes=[("PDF Files", "*.pdf")])
     
-    split_at = simpledialog.askstring(     # ask user for page number to split
+    split_at = simpledialog.askstring(     # ask user for page number to split in pop up
     "Split at page",
     "Enter page number to split at:",
     parent=window
@@ -154,7 +214,7 @@ user_entry_cut.place(x=400, y=170)
 # reorder paeg
 Label(page_reorder, text="Reorder", font=("Arial", 25)).place(x=500, y=100)
 Button(page_reorder, text="Go to Menu", command=lambda: default.tkraise()).place(x=50, y=50)
-Button(page_reorder, text="Select PDFs to reorder", command=pdf_merge).place(x=680, y=170)
+Button(page_reorder, text="Select PDFs to reorder", command=pdf_reorder).place(x=680, y=170)
 user_entry_reorder = Entry(page_reorder)      # field for the user
 user_entry_reorder.config(font="50")
 user_entry_reorder.insert(0,"Enter final name")
