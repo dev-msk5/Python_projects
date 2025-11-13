@@ -6,9 +6,18 @@ def validate_isbn(isbn, length):
         length = len(isbn)
     main_digits = isbn[0:length]
     given_check_digit = isbn[length-1]
-    main_digits_list = [int(digit) for digit in main_digits]
-    if not isinstance(main_digits_list,int):
-        return "Invalid character was found."
+    main_digits_list=[]
+    try:
+        main_digits_list = [int(digit) for digit in main_digits]
+    except:
+        for digit in main_digits:
+            if digit == 'X':
+                continue
+            try:
+                main_digits_list.append(int(digit))
+            except:
+                print("Invalid character was found.")
+                return
     # If the raw input string was passed as `isbn` (contains comma), parse it here.
     if isinstance(isbn, str) and ',' in isbn:
         parts = isbn.split(',')
@@ -32,7 +41,18 @@ def validate_isbn(isbn, length):
     else:
         expected_check_digit = calculate_check_digit_13(main_digits_list)
     # Check if the given check digit matches with the calculated check digit
-    if given_check_digit == expected_check_digit:
+    # Recompute using the first (length-1) digits to avoid earlier indexing bug
+    try:
+        core_digits = [int(d) for d in isbn[:length-1]]
+    except ValueError:
+        print("Invalid character was found.")
+        return
+    if length == 10:
+        expected_check_digit = calculate_check_digit_10(core_digits)
+    else:
+        expected_check_digit = calculate_check_digit_13(core_digits)
+    # Compare given and expected (handle lowercase 'x')
+    if str(given_check_digit).upper() == str(expected_check_digit).upper():
         print('Valid ISBN Code.')
     else:
         print('Invalid ISBN Code.')
@@ -80,8 +100,12 @@ def main():
     isbn = values[0]
     try:
         length = int(values[1])
-    except ValueError as e:
-        return "Length must be a number."
+    except ValueError:
+        print("Length must be a number.")
+        return
+    except IndexError:
+        print("Enter comma-separated values.")
+        return
     if length == 10 or length == 13:
         validate_isbn(isbn, length)
     else:
